@@ -1,4 +1,4 @@
-# Acquired .Net Library 1.0.0
+# Acquired .Net Library 1.0.1
 
 ## Description ##
 The Acquired API Library for Java enables you to work with Acquired APIs.
@@ -73,7 +73,7 @@ JObject result = aqpay.Capture();
 ```java
 if(aqpay.IsSignatureValid(result)) {
     
-    // do your job
+    // Perform actions based on the result
     
 }
 ```
