@@ -40,6 +40,11 @@ https://docs.acquired.com/api.php
 ## Installation ##
 You can simply Download the Release
 
+#NuGet#
+download api library from nuget.org (include AQPayCommon.cs and AQPay.cs which you can find code in Lib/AQpay)
+https://www.nuget.org/packages/acquired.com
+or install it from package manager PM> Install-Package acquired.com -Version 1.0.1
+
 ## Examples ##
 #### Get start
 
