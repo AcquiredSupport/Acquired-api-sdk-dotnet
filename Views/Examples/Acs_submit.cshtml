@@ -1,0 +1,18 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="UTF-8">
+    <title>3D Secure Redirect Page</title>
+	<link href="~/css/general.css" rel="stylesheet" type="text/css">
+</head>
+<body onload="OnLoadEvent()">
+    <form id="acs_form" action='@ViewData["url"]' method="post">
+        <input type="hidden" name="PaReq" value='@ViewData["pareq"]' />
+        <input type="hidden" name="TermUrl" value='@ViewData["termurl"]' />
+        <input type="hidden" name="MD" value='@ViewData["md"]' />
+    </form>
+    <script type="text/javascript">function OnLoadEvent() {
+            document.getElementById('acs_form').submit();
+    }</script>
+</body>
+</html>

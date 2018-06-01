@@ -10,14 +10,12 @@ namespace Acquiredapisdkdotnet.Lib.AQPay
 
         protected AQPayCommon util = new AQPayCommon();
         protected Hashtable param = new Hashtable();
-        protected String url;
         protected int connectTimeout;
 
         public AQPay()
         {
 
-            this.url = AQPayConfig.REQUESTURL;
-            this.connectTimeout = AQPayConfig.CURLTIMEOUT;
+            this.connectTimeout = 120;
 
         }
 
@@ -36,27 +34,21 @@ namespace Acquiredapisdkdotnet.Lib.AQPay
 
         private void SetBasicParam()
         {
-            if(this.param["mid_pass"] == null || this.param["mid_pass"].Equals("")){
-                this.param.Add("company_id", AQPayConfig.COMPANYID);
-                this.param.Add("company_pass", AQPayConfig.COMMPANYPASS);
-                if(this.param["mid_id"] != null && this.param["mid_id"].Equals("")){
-                    this.param.Add("company_mid_id", this.param["mid_id"]);
-                    this.param.Remove("mid_id");
-                }
-            }
+            this.param.Add("company_id", this.param["company_id"].ToString());
+            this.param.Add("company_pass", this.param["company_pass"].ToString());
+            this.param.Add("company_mid_id", this.param["company_mid_id"].ToString());
             this.param.Add("timestamp", this.util.Now());
-            string hashcode = AQPayConfig.HASHCODE;
+            string hashcode = this.param["hash_code"].ToString();
             this.param.Add("request_hash", this.util.RequestHash(this.param, hashcode));
         }
 
-        public string GenerateResHash(JObject data){
-            string hashcode = AQPayConfig.HASHCODE;
+        public string GenerateResHash(JObject data, string hashcode){            
             return this.util.ReponseHash(data, hashcode);
         }
 
-        public Boolean IsSignatureValid(JObject response){
+        public Boolean IsSignatureValid(JObject response, string hashcode){
             string key = response["response_hash"].ToString();
-            string response_hash = this.GenerateResHash(response);
+            string response_hash = this.GenerateResHash(response, hashcode);
             if(key.Equals(response_hash)){
                 return true;
             }else{
@@ -154,7 +146,9 @@ namespace Acquiredapisdkdotnet.Lib.AQPay
             }
 
             string json = JsonConvert.SerializeObject(data);
-            string response = this.util.Http_request(this.url, json, this.connectTimeout, "JSON");
+            String url = this.param["request_url"].ToString();
+            string response = this.util.Http_request(url, json, this.connectTimeout, "JSON");
+            Console.WriteLine(response);
 
             JObject result = JsonConvert.DeserializeObject<JObject>(response);
 

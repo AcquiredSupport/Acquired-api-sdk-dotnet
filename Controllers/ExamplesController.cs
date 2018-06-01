@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using System.Text;
 using System.Collections;
 using System.Web;
+using Microsoft.AspNetCore.Html;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -54,6 +55,15 @@ namespace Acquiredapisdkdotnet.Controllers
 
         public IActionResult Update_billing()
         {
+            return View();
+        }
+
+        public IActionResult Acs_submit(string url, string pareq, string termurl, string md)
+        {
+            ViewData["url"] = HttpUtility.UrlDecode(url);
+            ViewData["pareq"] = HttpUtility.UrlDecode(pareq).Replace(" ", "+");
+            ViewData["termurl"] = HttpUtility.UrlDecode(termurl);
+            ViewData["md"] = HttpUtility.UrlDecode(md);
             return View();
         }
 
@@ -127,8 +137,12 @@ namespace Acquiredapisdkdotnet.Controllers
 
             /*====== step 2: Set parameters ======*/
             AQPay aqpay = new AQPay();
-            aqpay.SetParam("mid_id", "1014");
-            aqpay.SetParam("mid_pass", "test");
+            aqpay.SetParam("request_url", AQPayConfig.REQUESTURL);
+            aqpay.SetParam("company_id", AQPayConfig.COMPANYID);
+            aqpay.SetParam("company_pass", AQPayConfig.COMPANYPASS);
+            aqpay.SetParam("company_mid_id", AQPayConfig.COMPANYMIDID);
+            aqpay.SetParam("hash_code", AQPayConfig.HASHCODE);
+
             aqpay.SetParam("vt", "");
             aqpay.SetParam("useragent", "");
             //set transaction data
@@ -176,13 +190,13 @@ namespace Acquiredapisdkdotnet.Controllers
 
             string resultstr = "";
             /*====== step 4: Check response hash ======*/
-            if (aqpay.IsSignatureValid(result))
+            if (aqpay.IsSignatureValid(result, AQPayConfig.HASHCODE))
             {
 
                 Console.WriteLine("SUCCESS: Request sucess");
                 resultstr = "SUCCESS: Request sucess";
 
-                //do your job
+                //Perform actions based on the result
 
                 /*====== deal 3-D secure ======*/
                 if (tds_action.Equals("ENQUIRE") && result["tds"] != null)
@@ -205,10 +219,9 @@ namespace Acquiredapisdkdotnet.Controllers
                             And you can read these param from you sqlserver when post SETTLEMENT request.
                          */
                         JObject md = new JObject
-                        {
-                            { "mid_id", "1014" },
-                            { "mid_pass", "test" },
-                            { "transaction_id", result["transaction_id"].ToString() },
+                        {                            
+                            { "company_id", result["company_id"].ToString() },
+                            { "original_transaction_id", result["transaction_id"].ToString() },
                             { "merchant_order_id", result["merchant_order_id"].ToString() },
                             { "amount", result["amount"].ToString() },
                             { "currency_code_iso3", result["currency_code_iso3"].ToString() },
@@ -219,8 +232,7 @@ namespace Acquiredapisdkdotnet.Controllers
                         string mdstr = Convert.ToBase64String(Encoding.UTF8.GetBytes(md.ToString()));
                         aqpay.SetParam("md", mdstr);
 
-                        string postResult = aqpay.PostToACS();
-                        Console.WriteLine("Post ACS Result: " + postResult);
+                        Response.Redirect(basePath + "Acs_submit?url=" + HttpUtility.UrlEncode(tdsobj["url"].ToString()) + "&pareq=" + HttpUtility.UrlEncode(tdsobj["pareq"].ToString()) + "&termurl=" + HttpUtility.UrlEncode(termurl) + "&md=" + HttpUtility.UrlEncode(mdstr));
 
                     }
                 }
@@ -238,12 +250,16 @@ namespace Acquiredapisdkdotnet.Controllers
         [HttpPost]
         public string Capture_submit(){
 
-            string original_transaction_id = Request.Form["transaction_id"];
+            string original_transaction_id = Request.Form["original_transaction_id"];
             string amount = Request.Form["amount"];
 
             AQPay aqpay = new AQPay();
-            aqpay.SetParam("mid_id", "1014");
-            aqpay.SetParam("mid_pass", "test");
+            aqpay.SetParam("request_url", AQPayConfig.REQUESTURL);
+            aqpay.SetParam("company_id", AQPayConfig.COMPANYID);
+            aqpay.SetParam("company_pass", AQPayConfig.COMPANYPASS);
+            aqpay.SetParam("company_mid_id", AQPayConfig.COMPANYMIDID);
+            aqpay.SetParam("hash_code", AQPayConfig.HASHCODE);
+
             aqpay.SetParam("original_transaction_id", original_transaction_id);
             aqpay.SetParam("amount", amount);
             JObject result = aqpay.Capture();
@@ -254,12 +270,12 @@ namespace Acquiredapisdkdotnet.Controllers
             Console.WriteLine("transaction_id: " + result["transaction_id"]);
 
             string resultstr = "";
-            if (aqpay.IsSignatureValid(result))
+            if (aqpay.IsSignatureValid(result, AQPayConfig.HASHCODE))
             {
 
                 Console.WriteLine("SUCCESS: Request sucess");
                 resultstr = "SUCCESS: Request sucess";
-                //do your job
+                // Perform actions based on the result
 
             }
             else
@@ -276,11 +292,15 @@ namespace Acquiredapisdkdotnet.Controllers
         public string Void_submit()
         {
 
-            string original_transaction_id = Request.Form["transaction_id"];
+            string original_transaction_id = Request.Form["original_transaction_id"];
 
             AQPay aqpay = new AQPay();
-            aqpay.SetParam("mid_id", "1014");
-            aqpay.SetParam("mid_pass", "test");
+            aqpay.SetParam("request_url", AQPayConfig.REQUESTURL);
+            aqpay.SetParam("company_id", AQPayConfig.COMPANYID);
+            aqpay.SetParam("company_pass", AQPayConfig.COMPANYPASS);
+            aqpay.SetParam("company_mid_id", AQPayConfig.COMPANYMIDID);
+            aqpay.SetParam("hash_code", AQPayConfig.HASHCODE);
+
             aqpay.SetParam("original_transaction_id", original_transaction_id);
             JObject result = aqpay.Void_deal();
 
@@ -290,12 +310,12 @@ namespace Acquiredapisdkdotnet.Controllers
             Console.WriteLine("transaction_id: " + result["transaction_id"]);
 
             string resultstr = "";
-            if (aqpay.IsSignatureValid(result))
+            if (aqpay.IsSignatureValid(result, AQPayConfig.HASHCODE))
             {
 
                 Console.WriteLine("SUCCESS: Request sucess");
                 resultstr = "SUCCESS: Request sucess";
-                //do your job
+                // Perform actions based on the result
 
             }
             else
@@ -312,12 +332,16 @@ namespace Acquiredapisdkdotnet.Controllers
         public string Refund_submit()
         {
 
-            string original_transaction_id = Request.Form["transaction_id"];
+            string original_transaction_id = Request.Form["original_transaction_id"];
             string amount = Request.Form["amount"];
 
             AQPay aqpay = new AQPay();
-            aqpay.SetParam("mid_id", "1014");
-            aqpay.SetParam("mid_pass", "test");
+            aqpay.SetParam("request_url", AQPayConfig.REQUESTURL);
+            aqpay.SetParam("company_id", AQPayConfig.COMPANYID);
+            aqpay.SetParam("company_pass", AQPayConfig.COMPANYPASS);
+            aqpay.SetParam("company_mid_id", AQPayConfig.COMPANYMIDID);
+            aqpay.SetParam("hash_code", AQPayConfig.HASHCODE);
+
             aqpay.SetParam("original_transaction_id", original_transaction_id);
             aqpay.SetParam("amount", amount);
             JObject result = aqpay.Refund();
@@ -328,12 +352,12 @@ namespace Acquiredapisdkdotnet.Controllers
             Console.WriteLine("transaction_id: " + result["transaction_id"]);
 
             string resultstr = "";
-            if (aqpay.IsSignatureValid(result))
+            if (aqpay.IsSignatureValid(result, AQPayConfig.HASHCODE))
             {
 
                 Console.WriteLine("SUCCESS: Request sucess");
                 resultstr = "SUCCESS: Request sucess";
-                //do your job
+                //Perform actions based on the result
 
             }
             else
@@ -363,8 +387,12 @@ namespace Acquiredapisdkdotnet.Controllers
             }
 
             AQPay aqpay = new AQPay();
-            aqpay.SetParam("mid_id", "1014");
-            aqpay.SetParam("mid_pass", "test");
+            aqpay.SetParam("request_url", AQPayConfig.REQUESTURL);
+            aqpay.SetParam("company_id", AQPayConfig.COMPANYID);
+            aqpay.SetParam("company_pass", AQPayConfig.COMPANYPASS);
+            aqpay.SetParam("company_mid_id", AQPayConfig.COMPANYMIDID);
+            aqpay.SetParam("hash_code", AQPayConfig.HASHCODE);
+
             aqpay.SetParam("transaction_type", transaction_type);
             aqpay.SetParam("merchant_order_id", merchant_order_id);
             aqpay.SetParam("amount", amount);
@@ -379,12 +407,12 @@ namespace Acquiredapisdkdotnet.Controllers
             Console.WriteLine("transaction_id: " + result["transaction_id"]);
 
             string resultstr = "";
-            if (aqpay.IsSignatureValid(result))
+            if (aqpay.IsSignatureValid(result, AQPayConfig.HASHCODE))
             {
 
                 Console.WriteLine("SUCCESS: Request sucess");
                 resultstr = "SUCCESS: Request sucess";
-                //do your job
+                //Perform actions based on the result
 
             }
             else
@@ -401,7 +429,7 @@ namespace Acquiredapisdkdotnet.Controllers
         public string Update_billing_submit()
         {
 
-            string original_transaction_id = Request.Form["transaction_id"];
+            string original_transaction_id = Request.Form["original_transaction_id"];
             string title = Request.Form["title"];
             string fname = Request.Form["fname"];
             string mname = Request.Form["mname"];
@@ -425,8 +453,11 @@ namespace Acquiredapisdkdotnet.Controllers
             string email = Request.Form["email"];
 
             AQPay aqpay = new AQPay();
-            aqpay.SetParam("mid_id", "1014");
-            aqpay.SetParam("mid_pass", "test");         
+            aqpay.SetParam("request_url", AQPayConfig.REQUESTURL);
+            aqpay.SetParam("company_id", AQPayConfig.COMPANYID);
+            aqpay.SetParam("company_pass", AQPayConfig.COMPANYPASS);
+            aqpay.SetParam("company_mid_id", AQPayConfig.COMPANYMIDID);
+            aqpay.SetParam("hash_code", AQPayConfig.HASHCODE);
             //set transaction data          
             aqpay.SetParam("original_transaction_id", original_transaction_id);
             //set customer data
@@ -461,12 +492,12 @@ namespace Acquiredapisdkdotnet.Controllers
             Console.WriteLine("transaction_id: " + result["transaction_id"]);
 
             string resultstr = "";
-            if (aqpay.IsSignatureValid(result))
+            if (aqpay.IsSignatureValid(result, AQPayConfig.HASHCODE))
             {
 
                 Console.WriteLine("SUCCESS: Request sucess");
                 resultstr = "SUCCESS: Request sucess";
-                //do your job
+                //Perform actions based on the result
 
             }
             else
@@ -509,8 +540,11 @@ namespace Acquiredapisdkdotnet.Controllers
             string email = Request.Form["email"];
 
             AQPay aqpay = new AQPay();
-            aqpay.SetParam("mid_id", "1014");
-            aqpay.SetParam("mid_pass", "test");         
+            aqpay.SetParam("request_url", AQPayConfig.REQUESTURL);
+            aqpay.SetParam("company_id", AQPayConfig.COMPANYID);
+            aqpay.SetParam("company_pass", AQPayConfig.COMPANYPASS);
+            aqpay.SetParam("company_mid_id", AQPayConfig.COMPANYMIDID);
+            aqpay.SetParam("hash_code", AQPayConfig.HASHCODE);
             //set transaction data
             aqpay.SetParam("merchant_order_id", merchant_order_id);
             aqpay.SetParam("amount", amount);
@@ -551,12 +585,12 @@ namespace Acquiredapisdkdotnet.Controllers
             Console.WriteLine("transaction_id: " + result["transaction_id"]);
 
             string resultstr = "";
-            if (aqpay.IsSignatureValid(result))
+            if (aqpay.IsSignatureValid(result, AQPayConfig.HASHCODE))
             {
 
                 Console.WriteLine("SUCCESS: Request sucess");
                 resultstr = "SUCCESS: Request sucess";
-                //do your job
+                //Perform actions based on the result
 
             }
             else
@@ -566,77 +600,6 @@ namespace Acquiredapisdkdotnet.Controllers
             }
 
             return resultstr;
-
-        }
-
-
-        public void Test_ACS(){
-
-            string basePath = "http://" + Request.Host + "/examples/";
-            string resultstr = "{\"mid_id\":\"1014\",\"mid_pass\":\"test\",\"transaction_id\":\"101750\","
-                    + "\"merchant_order_id\":\"20171128091112\","
-                    + "\"amount\":\"1\","
-                    + "\"currency_code_iso3\":\"CBA\","
-                    + "\"transaction_type\":\"AUTH_ONLY\","
-                    + "\"response_code\":\"501\","
-                    + "\"tds\":{\"pareq\":\"testpareq\",\"url\":\"" + basePath + "Acs_servers\"}}";
-            JObject result = JsonConvert.DeserializeObject<JObject>(resultstr);
-            string tds_action = "ENQUIRE";
-
-            if (tds_action.Equals("ENQUIRE") && result["tds"] != null)
-            {
-
-                JObject tdsobj = JsonConvert.DeserializeObject<JObject>(result["tds"].ToString());
-
-                string[] response_code_array = { "501", "502" };
-                if (Array.IndexOf(response_code_array, result["response_code"].ToString()) != -1)
-                {
-                    AQPay aqpay = new AQPay();
-                    aqpay.SetParam("pareq", tdsobj["pareq"].ToString());//should be Acquired response
-                    aqpay.SetParam("ACS_url", tdsobj["url"].ToString());//should be Acquired response
-                    String termurl = HttpUtility.UrlEncode(basePath + "Acs_notify");
-                    aqpay.SetParam("termurl", termurl);
-
-                    JObject md = new JObject
-                    {
-                        { "mid_id", "1014" },
-                        { "mid_pass", "test" },
-                        { "transaction_id", result["transaction_id"] },
-                        { "merchant_order_id", result["merchant_order_id"] },
-                        { "amount", result["amount"] },
-                        { "currency_code_iso3", result["currency_code_iso3"] },
-                        { "transaction_type", result["transaction_type"] }
-                    };
-                    string mdstr = Convert.ToBase64String(Encoding.UTF8.GetBytes(md.ToString()));
-                    aqpay.SetParam("md", mdstr);
-
-                    String postResult = aqpay.PostToACS();
-                    Console.WriteLine("Post ACS Result: " + postResult);
-
-                }
-
-            }
-
-        }
-
-        //simulate ACS servers
-        [HttpPost]
-        public void Acs_servers(){
-
-            string pareq = Request.Form["pareq"];
-            string md = Request.Form["md"];
-            string url = HttpUtility.UrlDecode(Request.Form["termurl"]);
-            string pares = "pares";
-
-            if (!string.IsNullOrEmpty(pareq))
-            {
-
-                string post_data = "PaRes=" + pares + "&md=" + md;
-                AQPayCommon util = new AQPayCommon();
-                String result = util.Http_request(url, post_data, 30);
-                Console.WriteLine("Acs_servers result: " + result);
-
-            }
 
         }
 
@@ -658,9 +621,13 @@ namespace Acquiredapisdkdotnet.Controllers
                 string mdstr = Encoding.UTF8.GetString(Convert.FromBase64String(md));
                 JObject mdjson = JsonConvert.DeserializeObject<JObject>(mdstr);
 
-                auth.SetParam("mid_id", mdjson["mid_id"].ToString());
-                auth.SetParam("mid_pass", mdjson["mid_pass"].ToString());
-                auth.SetParam("original_transaction_id", mdjson["transaction_id"].ToString());
+                auth.SetParam("request_url", AQPayConfig.REQUESTURL);
+                auth.SetParam("company_id", AQPayConfig.COMPANYID);
+                auth.SetParam("company_pass", AQPayConfig.COMPANYPASS);
+                auth.SetParam("company_mid_id", AQPayConfig.COMPANYMIDID);
+                auth.SetParam("hash_code", AQPayConfig.HASHCODE);
+
+                auth.SetParam("original_transaction_id", mdjson["original_transaction_id"].ToString());
                 auth.SetParam("merchant_order_id", mdjson["merchant_order_id"].ToString());
                 auth.SetParam("amount", mdjson["amount"].ToString());
                 auth.SetParam("currency_code_iso3", mdjson["currency_code_iso3"].ToString());
@@ -672,11 +639,11 @@ namespace Acquiredapisdkdotnet.Controllers
                 Console.WriteLine("response_message: " + result["response_message"]);
                 Console.WriteLine("transaction_id: " + result["transaction_id"]);
 
-                if (auth.IsSignatureValid(result))
+                if (auth.IsSignatureValid(result, AQPayConfig.HASHCODE))
                 {
 
                     Console.WriteLine("SUCCESS: Request sucess [postSettleACS]");
-                    //do your job
+                    //Perform actions based on the result
 
                 }
                 else

@@ -40,23 +40,16 @@ namespace Acquiredapisdkdotnet.Lib.AQPay
 
         public string RequestHash(Hashtable param, string secret){
 
-            string _id;
             string str = "";
-
-            if(param["company_id"] != null){
-                _id = param["company_id"].ToString();
-            }else{
-                _id = param["mid_id"].ToString();
-            }
 
             string transaction_type = param["transaction_type"].ToString();
             string[] transaction_type_1 = { "AUTH_ONLY", "AUTH_CAPTURE", "CREDIT" };
             string[] transaction_type_2 = { "CAPTURE", "VOID", "REFUND", "SUBSCRIPTION_MANAGE" };
 
             if(Array.IndexOf(transaction_type_1, transaction_type) != -1){
-                str = param["timestamp"].ToString() + param["transaction_type"] + _id + param["merchant_order_id"];
+                str = param["timestamp"].ToString() + param["transaction_type"] + param["company_id"].ToString() + param["merchant_order_id"];
             }else if(Array.IndexOf(transaction_type_2, transaction_type) != -1){
-                str = param["timestamp"].ToString() + param["transaction_type"] + _id + param["original_transaction_id"];
+                str = param["timestamp"].ToString() + param["transaction_type"] + param["company_id"].ToString() + param["original_transaction_id"];
             }
 
             string secstr = str + secret;
@@ -65,26 +58,26 @@ namespace Acquiredapisdkdotnet.Lib.AQPay
 
         }
 
+
         public string ReponseHash(JObject param, string secret){
 
-            string _id;
             string str = "";
 
-            if (param["company_id"] != null)
-            {
-                _id = param["company_id"].ToString();
-            }
-            else
-            {
-                _id = param["mid"].ToString();
-            }
-
-            str = param["timestamp"].ToString() + param["transaction_type"].ToString() + _id + param["transaction_id"] + param["response_code"];
+            str = param["timestamp"].ToString() + param["transaction_type"].ToString() + param["company_id"].ToString() + param["transaction_id"] + param["response_code"];
 
             String secstr = str + secret;
 
             return Sha256hash(secstr);
 
+        }
+
+        public string GenerateWebhookHash(JObject data){
+            string hash_tmp = data["id"].ToString() + data["timestamp"].ToString() + data["company_id"].ToString() + data["event"].ToString();
+            string hash_tmp2 = Sha256hash(hash_tmp);
+            hash_tmp2 = hash_tmp2 + data["company_hash_code"];
+            string hash = Sha256hash(hash_tmp2);
+
+            return hash;
         }
 
         public string Http_request(string url, string data, int connectTimeout){
