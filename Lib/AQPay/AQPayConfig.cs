@@ -5,13 +5,13 @@ namespace Acquiredapisdkdotnet.Lib.AQPay
     public static class AQPayConfig
     {
 
-        public static readonly string COMPANYID = "108";
-        public static readonly string COMPANYPASS = "test";
-        public static readonly string COMPANYMIDID = "1014";
-        public static readonly string HASHCODE = "test";
+        public static readonly string COMPANYID = "";
+        public static readonly string COMPANYPASS = "";
+        public static readonly string COMPANYMIDID = "";
+        public static readonly string HASHCODE = "";
          
         //require api url
-        public static readonly string REQUESTURL = "http://devapi.paymentflow.com/api.php"; 
+        public static readonly string REQUESTURL = "";
         //QA: https://qaapi.acquired.com/api.php
         //PROD: https://gateway.acquired.com/api.php    
 
